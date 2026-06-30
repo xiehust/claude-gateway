@@ -143,6 +143,50 @@ curl -sS --cacert $CA -X POST $H/v1/messages \
 
 ---
 
+## 4b. Use the gateway from a public laptop (SSM tunnel)
+
+The ALB is internal and `gw.claude-gateway.internal` only resolves inside the
+VPC, so a public machine can't reach it directly. Instead of exposing anything
+to the internet, tunnel through the in-VPC EC2 host with **SSM port forwarding**
+(no inbound ports, no public IP). This was verified end-to-end (sign-in +
+inference both work through the tunnel).
+
+**Laptop prereqs:** AWS CLI v2 + the [Session Manager plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html),
+and AWS creds allowed to `ssm:StartSession` on the EC2 host.
+
+**One-time setup** (writes the CA + a hosts entry):
+```bash
+sudo bash verify/laptop-setup.sh
+# -> writes ~/claude-gateway-ca.pem and adds "127.0.0.1 gw.claude-gateway.internal"
+#    to /etc/hosts. CA SHA-256:
+#    3B:C4:CC:60:7A:3E:4E:CE:2B:2E:23:49:63:79:B0:CB:69:53:57:7E:64:74:C3:D6:39:62:24:33:B2:35:EB:A7
+```
+
+**Open the tunnel** (terminal A — keep it running):
+```bash
+sudo bash verify/laptop-connect.sh
+# binds local 443 -> gw.claude-gateway.internal:443 via the EC2 host
+```
+> Local port **must be 443** — the gateway's `public_url` has no port, so the
+> OIDC `redirect_uri` won't match if you remap to another port. Hence `sudo`
+> (binding 443). The EC2 host resolves the private hostname for you.
+
+**Use it** (terminal B):
+```bash
+export NODE_EXTRA_CA_CERTS=~/claude-gateway-ca.pem
+curl --cacert ~/claude-gateway-ca.pem https://gw.claude-gateway.internal/healthz   # ok
+```
+Then run the steps in sections 2–4 unchanged (they all use the hostname).
+For **browser sign-in**, import `~/claude-gateway-ca.pem` into your OS/browser
+trust store so the `/device` page loads without a TLS warning.
+
+> Alternatives if you can't bind 443 or want a more native experience: AWS
+> Client VPN (laptop joins the VPC, the hostname resolves to the real private
+> IP — nothing else changes) or an SSH `-L 443:gw.claude-gateway.internal:443`
+> tunnel (needs port 22 + a public IP on the EC2 host).
+
+---
+
 ## 5. Inspect the audit log
 
 ```bash

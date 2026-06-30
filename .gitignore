@@ -1,0 +1,17 @@
+# Terraform state & plans (state contains secrets; never commit)
+*.tfstate
+*.tfstate.*
+.terraform/
+tfplan
+*.tfvars
+# Note: .terraform.lock.hcl IS committed (provider pins, no secrets)
+
+# TLS material — never commit private keys or certs
+certs/
+
+# The pinned native binary is a large build artifact (copied from the host),
+# not source. Rebuild via build-and-push.sh which copies the verified release.
+docker/claude
+
+# Local env scratch
+*.env

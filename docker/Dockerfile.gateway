@@ -1,0 +1,12 @@
+# Gateway runtime image: base claude image + the baked gateway.yaml.
+# Config uses only ${ENV} expansion (no secrets in the layer). Secrets + the CA
+# PEM are injected as env at deploy time.
+ARG BASE
+FROM ${BASE}
+COPY gateway.yaml /etc/claude/gateway.yaml
+COPY docker/gateway-entrypoint.sh /usr/local/bin/gateway-entrypoint.sh
+RUN chmod 0755 /usr/local/bin/gateway-entrypoint.sh
+# Wrap the base tini entrypoint: set NODE_EXTRA_CA_CERTS from OIDC_CA_CERT_PEM,
+# then exec the gateway command.
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/gateway-entrypoint.sh"]
+CMD ["claude", "gateway", "--config", "/etc/claude/gateway.yaml"]

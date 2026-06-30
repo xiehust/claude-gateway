@@ -1,0 +1,10 @@
+{
+  "forceLoginMethod": "gateway",
+  "forceLoginGatewayUrl": "https://gw.claude-gateway.internal",
+  "_developer_connect_notes": {
+    "description": "Drop this at the managed-settings path (e.g. /Library/Application Support/ClaudeCode/managed-settings.json on macOS, or /etc/claude-code/managed-settings.json on Linux) to point Claude Code at this gateway.",
+    "ca_trust": "Set NODE_EXTRA_CA_CERTS to the gateway CA (claude-gateway/certs/ca.pem) so the CLI trusts the self-signed ALB cert.",
+    "tls_leaf_sha256_fingerprint": "28:D1:EE:2D:C2:D5:4A:D3:6F:F5:36:A5:8E:21:C4:E9:CF:BA:0C:0B:08:98:B3:E3:2D:32:40:06:6B:34:25:8A",
+    "first_connect": "On first contact the CLI fingerprints the TLS leaf and prompts the user to trust it; the value above is what the prompt should show."
+  }
+}

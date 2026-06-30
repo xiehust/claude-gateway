@@ -1,0 +1,36 @@
+# Dex OIDC IdP for the claude-gateway test deployment.
+# Issuer MUST exactly equal the gateway's oidc.issuer and the discovery doc's
+# `issuer` value. TLS is terminated at the internal ALB; Dex serves plain HTTP
+# on :5556 behind it. The /dex path prefix comes from the issuer path.
+issuer: https://gw.claude-gateway.internal/dex
+
+storage:
+  type: memory
+
+web:
+  http: 0.0.0.0:5556
+
+# Static OAuth client for the gateway. The secret is injected from the
+# environment (Dex expandEnv defaults to true) — never committed in cleartext.
+staticClients:
+  - id: claude-gateway
+    name: Claude Gateway
+    # Placeholder substituted at container start by entrypoint.sh from
+    # $DEX_CLIENT_SECRET (Dex v2.41.1 does NOT expand env vars in config, and
+    # enabling it would mangle the bcrypt $2b$... hash below).
+    secret: DEX_CLIENT_SECRET_PLACEHOLDER
+    redirectURIs:
+      - https://gw.claude-gateway.internal/oauth/callback
+
+# One deterministic test user. Password "gateway-dev-pw" (bcrypt cost 10).
+# email_verified is emitted by Dex for staticPasswords, satisfying the
+# gateway's allowed_email_domains:[example.com] check.
+enablePasswordDB: true
+staticPasswords:
+  - email: dev@example.com
+    hash: "$2b$10$zfbHoVuC//iTYihNQS6fSOuUz6cBkaDWrkqlag/FHhhrRo6Dk4eAO"
+    username: dev
+    userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+
+oauth2:
+  skipApprovalScreen: true

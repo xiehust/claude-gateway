@@ -1,0 +1,37 @@
+# Claude apps gateway config. Uses ONLY ${ENV} expansion — no literal secrets.
+# Secrets injected from Secrets Manager by ECS; the (non-secret) CA PEM is
+# injected as a plain env var so the gateway trusts the self-signed ALB cert
+# for OIDC discovery against Dex.
+
+listen:
+  host: 0.0.0.0
+  port: 8080
+  # Behind the L7 ALB: public_url is the externally-visible HTTPS origin,
+  # trusted_proxies lets the gateway derive real client IPs from XFF.
+  public_url: https://gw.claude-gateway.internal
+  trusted_proxies:
+    - 172.31.0.0/16
+
+oidc:
+  issuer: https://gw.claude-gateway.internal/dex
+  client_id: claude-gateway
+  client_secret: ${OIDC_CLIENT_SECRET}
+  allowed_email_domains:
+    - example.com
+  userinfo_fallback: true
+  # Trust the self-signed ALB/Dex cert for discovery + token exchange.
+  ca_cert_pem: ${OIDC_CA_CERT_PEM}
+
+session:
+  jwt_secret: ${GATEWAY_JWT_SECRET}
+  ttl_hours: 1
+
+store:
+  postgres_url: ${GATEWAY_POSTGRES_URL}
+
+upstreams:
+  - provider: bedrock
+    region: us-west-2
+    auth: {}
+
+auto_include_builtin_models: true
